@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="医学文献与政策信息检索", layout="wide")
 st.title("📚 医学文献与政策信息检索工具")
 
-# 初始化状态（只在第一次加载时执行）
+# 初始化 session 状态
 if 'result_paths' not in st.session_state:
     st.session_state.result_paths = None
 
@@ -16,6 +16,7 @@ query_cn = st.text_input("🔍 输入中文关键词（百度学术 & 政策）"
 time_range = st.selectbox("🕒 选择时间范围", ["近一年", "近六个月", "近三个月", "近一个月", "近一周"])
 
 max_pubmed = st.slider("📈 PubMed 文献数量", min_value=10, max_value=500, step=10, value=50)
+max_baidu = st.slider("📘 百度学术 文献数量", min_value=1, max_value=50, step=1, value=5)
 translate_option = st.checkbox("🌐 翻译标题和摘要为中文", value=True)
 
 if st.button("🚀 开始检索"):
@@ -25,7 +26,7 @@ if st.button("🚀 开始检索"):
             query_cn,
             time_range,
             max_pubmed_results=max_pubmed,
-            max_baidu_results=5,
+            max_baidu_results=max_baidu,
             max_policy_results=3,
             translate=translate_option
         )
