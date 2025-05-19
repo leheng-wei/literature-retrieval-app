@@ -151,28 +151,28 @@ def run_retrieval_workflow(query_en, query_cn, time_period_str, max_pubmed_resul
            os.path.join(OUTPUT_DIR, "chinese_literature_results.xlsx"), \
            os.path.join(OUTPUT_DIR, "policy_information_summary.txt")
 
-if __name__ == "__main__":
-    # Example usage based on user's request
-    # User query: "肥胖与T2DM", time: "近一年"
-    # For PubMed, we need an English equivalent for the query.
-    # Let's assume a simple translation or a predefined English version for the example.
-    english_query = "obesity AND type 2 diabetes mellitus" # Or "obesity AND T2DM"
-    chinese_query = "肥胖与T2DM"
-    search_time_period = "近一年" # User can change this
+# if __name__ == "__main__":
+#     # Example usage based on user's request
+#     # User query: "肥胖与T2DM", time: "近一年"
+#     # For PubMed, we need an English equivalent for the query.
+#     # Let's assume a simple translation or a predefined English version for the example.
+#     english_query = "obesity AND type 2 diabetes mellitus" # Or "obesity AND T2DM"
+#     chinese_query = "肥胖与T2DM"
+#     search_time_period = "近一年" # User can change this
 
-    # Define maximum results for each source (can be adjusted)
-    max_pubmed = 10 # Reduced for faster testing, user might want more
-    max_baidu = 5
-    max_policy = 3
+#     # Define maximum results for each source (can be adjusted)
+#     max_pubmed = 10 # Reduced for faster testing, user might want more
+#     max_baidu = 5
+#     max_policy = 3
 
-    print(f"Script started at {datetime.datetime.now().strftime(	'%Y-%m-%d %H:%M:%S'	)}")
-    run_retrieval_workflow(
-        english_query, 
-        chinese_query, 
-        search_time_period,
-        max_pubmed_results=max_pubmed,
-        max_baidu_results=max_baidu,
-        max_policy_results=max_policy
-    )
-    print(f"Script finished at {datetime.datetime.now().strftime(	'%Y-%m-%d %H:%M:%S'	)}")
+#     print(f"Script started at {datetime.datetime.now().strftime(	'%Y-%m-%d %H:%M:%S'	)}")
+#     run_retrieval_workflow(
+#         english_query, 
+#         chinese_query, 
+#         search_time_period,
+#         max_pubmed_results=max_pubmed,
+#         max_baidu_results=max_baidu,
+#         max_policy_results=max_policy
+#     )
+#     print(f"Script finished at {datetime.datetime.now().strftime(	'%Y-%m-%d %H:%M:%S'	)}")
 
