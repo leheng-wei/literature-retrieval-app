@@ -18,7 +18,10 @@ def search_baidu_xueshu(query, max_results=5):
     options.add_argument('--no-sandbox')
     options.add_argument("--disable-blink-features=AutomationControlled")
 
-    driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
+    from selenium.webdriver.chrome.service import Service
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+
 
     try:
         driver.get(search_url)
