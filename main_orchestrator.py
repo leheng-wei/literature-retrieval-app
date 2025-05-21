@@ -101,7 +101,7 @@ def run_retrieval_workflow(query_en, query_cn, time_period_str, max_pubmed_resul
 
     # 3. Chinese Literature Retrieval (Baidu Xueshu)
     print("\n--- Retrieving Chinese Literature from Baidu Xueshu ---")
-    baidu_articles_raw = search_baidu_xueshu(query_cn, max_results=max_baidu_results)
+    baidu_articles_raw = search_cnki(query_cn, max_results=max_baidu_results)
     if baidu_articles_raw:
         # For Baidu results, Title and Abstract are already Chinese.
         # We just need to ensure the columns match the final Excel structure.
@@ -111,7 +111,7 @@ def run_retrieval_workflow(query_en, query_cn, time_period_str, max_pubmed_resul
             article["Abstract (中文翻译版)"] = article.get("Abstract") # Already Chinese
             article["Impact Factor"] = get_impact_factor(article.get("Journal"), impact_factors_data)
             # Other fields like PMID, DOI, Article Type are often N/A from Baidu
-        standardized_baidu_data = process_articles_common(baidu_articles_raw, source_type="BaiduXueshu")
+        standardized_baidu_data = process_articles_common(baidu_articles_raw, source_type="CNKI")
         baidu_df = pd.DataFrame(standardized_baidu_data)
         save_to_excel(baidu_df, "chinese_literature_results.xlsx", sheet_name="Chinese Literature Results")
     else:
