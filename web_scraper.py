@@ -4,54 +4,50 @@ from bs4 import BeautifulSoup
 import re
 from urllib.parse import quote_plus, urljoin
 
-# --- 百度学术 ---
-def search_baidu_xueshu(query, max_results=5):
+# --- CNKI 替代百度学术 ---
+def search_cnki(query, max_results=5):
+    search_url = f"https://search.cnki.com.cn/Search.aspx?q={quote_plus(query)}&rank=relevant"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+                      "(KHTML, like Gecko) Chrome/91.0 Safari/537.36"
     }
-    url = f"https://xueshu.baidu.com/s?wd={quote_plus(query)}"
 
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
+        response = requests.get(search_url, headers=headers, timeout=15)
+        response.raise_for_status()
     except Exception as e:
-        print(f"[Baidu学术] 请求失败: {e}")
+        print(f"[CNKI] 请求失败: {e}")
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(response.text, "html.parser")
     results = []
 
-    containers = soup.find_all("div", class_=re.compile(r"result|sc_content|c_content"))
-    if not containers:
-        print("[Baidu学术] 没有找到有效结果容器")
+    articles = soup.find_all("div", class_="wz_content")[:max_results]
+    if not articles:
+        print("[CNKI] 没有找到文章结果")
         return []
 
-    for item in containers[:max_results]:
+    for art in articles:
         try:
-            title_tag = item.find("h3")
-            if not title_tag or not title_tag.find("a"):
-                continue
+            title_tag = art.find("a", class_="fz14")
             title = title_tag.get_text(strip=True)
-            href = title_tag.find("a")["href"]
+            href = title_tag["href"]
             if not href.startswith("http"):
-                href = urljoin("https://xueshu.baidu.com", href)
+                href = urljoin("https://search.cnki.com.cn/", href)
 
-            abstract_tag = item.find("div", class_=re.compile("abstract|c_abstract|c-span18"))
-            abstract = abstract_tag.get_text(strip=True).replace("摘要：", "") if abstract_tag else "N/A"
-
-            info_tag = item.find("div", class_=re.compile("sc_info|author_text|c_subtext"))
-            authors, journal, year = "N/A", "N/A", "N/A"
+            info_tag = art.find("p", class_="source")
+            journal, year = "N/A", "N/A"
             if info_tag:
-                text = info_tag.get_text(" ", strip=True)
-                authors_match = re.findall(r'[一-龥]{2,4}', text)
-                authors = ", ".join(authors_match[:5]) if authors_match else "N/A"
-                journal_match = re.search(r'[《](.*?)[》]', text)
+                text = info_tag.get_text(strip=True)
+                journal_match = re.search(r"《(.*?)》", text)
                 if journal_match:
                     journal = journal_match.group(1)
-                year_match = re.search(r'(19|20)\d{2}', text)
+                year_match = re.search(r"(19|20)\d{2}", text)
                 if year_match:
                     year = year_match.group(0)
+
+            abstract_tag = art.find("p", class_="brief")
+            abstract = abstract_tag.get_text(strip=True) if abstract_tag else "N/A"
 
             results.append({
                 "Title": title,
@@ -59,7 +55,7 @@ def search_baidu_xueshu(query, max_results=5):
                 "Abstract": abstract,
                 "Abstract (中文翻译版)": abstract,
                 "Publication Date": year,
-                "Authors": authors,
+                "Authors": "N/A",
                 "DOI": "N/A",
                 "Article Type": "N/A",
                 "Journal": journal,
@@ -68,10 +64,10 @@ def search_baidu_xueshu(query, max_results=5):
                 "Full Text Link": href
             })
         except Exception as e:
-            print(f"解析文献出错: {e}")
+            print(f"[CNKI] 解析出错: {e}")
             continue
 
-    print(f"[Baidu学术] 成功获取 {len(results)} 条记录")
+    print(f"[CNKI] 获取成功，共 {len(results)} 条文献")
     return results
 
 # --- 请求工具函数 ---
