@@ -6,7 +6,7 @@ import os
 
 # Import modules from the project
 from pubmed_retriever import search_pubmed
-from web_scraper import search_baidu_xueshu, search_nmpa_news, search_fda_news, search_who_news
+from web_scraper import search_cnki, search_nmpa_news, search_fda_news, search_who_news
 from data_processor_fixed import (
     translate_text, 
     load_impact_factors, 
