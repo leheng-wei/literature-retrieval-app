@@ -1,66 +1,55 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
-import time
-import re
-from urllib.parse import urljoin, quote_plus
+
 import requests
+from bs4 import BeautifulSoup
+import re
+from urllib.parse import quote_plus, urljoin
 
-# --- 百度学术（Selenium） ---
+# --- 百度学术 ---
 def search_baidu_xueshu(query, max_results=5):
-    search_url = f"https://xueshu.baidu.com/s?wd={quote_plus(query)}"
-
-    options = Options()
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
-    options.add_argument("--disable-blink-features=AutomationControlled")
-
-    from selenium.webdriver.chrome.service import Service
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    }
+    url = f"https://xueshu.baidu.com/s?wd={quote_plus(query)}"
 
     try:
-        driver.get(search_url)
-        time.sleep(3)
-        html = driver.page_source
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
     except Exception as e:
-        print(f"Selenium 获取页面失败: {e}")
-        driver.quit()
+        print(f"[Baidu学术] 请求失败: {e}")
         return []
-    finally:
-        driver.quit()
 
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(resp.text, "html.parser")
     results = []
-    containers = soup.find_all('div', class_='result') or soup.find_all('div', class_='c_content')
+
+    containers = soup.find_all("div", class_=re.compile(r"result|sc_content|c_content"))
+    if not containers:
+        print("[Baidu学术] 没有找到有效结果容器")
+        return []
 
     for item in containers[:max_results]:
         try:
-            title_tag = item.find('h3')
-            if not title_tag or not title_tag.find('a'):
+            title_tag = item.find("h3")
+            if not title_tag or not title_tag.find("a"):
                 continue
             title = title_tag.get_text(strip=True)
-            href = title_tag.find('a')['href']
+            href = title_tag.find("a")["href"]
             if not href.startswith("http"):
                 href = urljoin("https://xueshu.baidu.com", href)
 
-            abstract_tag = item.find('div', class_=re.compile(r'abstract|c-abstract'))
+            abstract_tag = item.find("div", class_=re.compile("abstract|c_abstract|c-span18"))
             abstract = abstract_tag.get_text(strip=True).replace("摘要：", "") if abstract_tag else "N/A"
 
-            info_div = item.find('div', class_=re.compile(r'sc_info|c-subtext|author_text'))
+            info_tag = item.find("div", class_=re.compile("sc_info|author_text|c_subtext"))
             authors, journal, year = "N/A", "N/A", "N/A"
-            if info_div:
-                text = info_div.get_text(" ", strip=True)
-                authors_match = re.findall(r'[\u4e00-\u9fa5]{2,4}', text)
+            if info_tag:
+                text = info_tag.get_text(" ", strip=True)
+                authors_match = re.findall(r'[一-龥]{2,4}', text)
                 authors = ", ".join(authors_match[:5]) if authors_match else "N/A"
                 journal_match = re.search(r'[《](.*?)[》]', text)
                 if journal_match:
                     journal = journal_match.group(1)
-                year_match = re.search(r'(19|20)\\d{2}', text)
+                year_match = re.search(r'(19|20)\d{2}', text)
                 if year_match:
                     year = year_match.group(0)
 
@@ -79,10 +68,10 @@ def search_baidu_xueshu(query, max_results=5):
                 "Full Text Link": href
             })
         except Exception as e:
-            print(f"解析文献失败: {e}")
+            print(f"解析文献出错: {e}")
             continue
 
-    print(f"[Selenium-Baidu] 获取到 {len(results)} 条文献")
+    print(f"[Baidu学术] 成功获取 {len(results)} 条记录")
     return results
 
 # --- 请求工具函数 ---
