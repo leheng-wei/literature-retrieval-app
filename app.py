@@ -14,12 +14,12 @@ if 'output_files' not in st.session_state:
 
 # 输入区域
 query_en = st.text_input("🔍 输入英文关键词（PubMed 检索）", value="obesity AND type 2 diabetes mellitus")
-query_cn = st.text_input("🔍 输入中文关键词（百度学术 & 政策）", value="肥胖与T2DM")
+query_cn = st.text_input("🔍 输入中文关键词（CNKI & 政策）", value="肥胖与T2DM")
 
 time_range = st.selectbox("🕒 选择时间范围", ["近一年", "近六个月", "近三个月", "近一个月", "近一周"])
 
 max_pubmed = st.slider("PubMed 结果数量", 5, 50, 10)
-max_baidu = st.slider("百度学术结果数量", 3, 20, 5)
+max_baidu = st.slider("CNKI结果数量", 3, 20, 5)
 max_policy = st.slider("政策信息来源（每来源最多）", 1, 10, 3)
 
 # 启动按钮
@@ -64,13 +64,13 @@ if st.session_state.results_ready:
         if os.path.exists(st.session_state.output_files["baidu"]):
             with open(st.session_state.output_files["baidu"], "rb") as f:
                 st.download_button(
-                    label="下载 百度学术 结果 Excel",
+                    label="下载 CNKI 结果 Excel",
                     data=f,
                     file_name="chinese_literature_results.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
         else:
-            st.warning("百度学术结果文件不存在")
+            st.warning("CNKI结果文件不存在")
     
     with col3:
         if os.path.exists(st.session_state.output_files["policy"]):
