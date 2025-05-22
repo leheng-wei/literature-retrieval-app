@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import requests
@@ -73,3 +74,103 @@ if st.button("🔍 开始检索") and query.strip():
             )
         else:
             st.warning("未获取到任何文献数据。")
+
+
+# --- 请求工具函数 ---
+def make_request(url):
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        resp.encoding = resp.apparent_encoding or 'utf-8'
+        return resp.text
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return None
+
+# --- NMPA ---
+def search_nmpa_news(query, max_results=5):
+    base_url = "https://www.nmpa.gov.cn"
+    list_url = f"{base_url}/xwzh/zhyw/index.html"
+    html = make_request(list_url)
+    if not html:
+        return []
+
+    soup = BeautifulSoup(html, "html.parser")
+    links = soup.find_all("a", href=True)
+    results = []
+    for link in links:
+        if len(results) >= max_results:
+            break
+        title = link.get_text(strip=True)
+        href = link['href']
+        if not title or query not in title:
+            continue
+        if not href.startswith("http"):
+            href = urljoin(base_url, href)
+        results.append({
+            "Title": title,
+            "Link": href,
+            "Source": "NMPA",
+            "Publication Date": "N/A",
+            "Summary": "N/A"
+        })
+    return results
+
+# --- FDA ---
+def search_fda_news(query, max_results=5):
+    search_url = f"https://www.fda.gov/search?s={quote_plus(query)}"
+    html = make_request(search_url)
+    if not html:
+        return []
+
+    soup = BeautifulSoup(html, 'html.parser')
+    articles = soup.select("div.views-row")
+    results = []
+    for item in articles[:max_results]:
+        try:
+            title_tag = item.find('a')
+            title = title_tag.get_text(strip=True)
+            href = urljoin("https://www.fda.gov", title_tag['href'])
+            summary = item.get_text(strip=True)
+            results.append({
+                "Title": title,
+                "Link": href,
+                "Source": "FDA",
+                "Publication Date": "N/A",
+                "Summary": summary[:300]
+            })
+        except:
+            continue
+    return results
+
+# --- WHO ---
+def search_who_news(query, max_results=5):
+    search_url = f"https://www.who.int/news-room/search?query={quote_plus(query)}"
+    html = make_request(search_url)
+    if not html:
+        return []
+
+    soup = BeautifulSoup(html, 'html.parser')
+    items = soup.select("div.sf-result-item")
+    results = []
+    for item in items[:max_results]:
+        try:
+            title_tag = item.find("a", class_="sf-result-item-link")
+            title = title_tag.get_text(strip=True)
+            href = urljoin("https://www.who.int", title_tag["href"])
+            summary_tag = item.find("div", class_="sf-result-item-summary")
+            summary = summary_tag.get_text(strip=True) if summary_tag else "N/A"
+            results.append({
+                "Title": title,
+                "Link": href,
+                "Source": "WHO",
+                "Publication Date": "N/A",
+                "Summary": summary
+            })
+        except:
+            continue
+    return results
