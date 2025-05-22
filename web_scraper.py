@@ -1,12 +1,11 @@
-
 import requests
 from bs4 import BeautifulSoup
 import re
 from urllib.parse import quote_plus, urljoin
 
-# --- CNKI 替代百度学术 ---
-def search_cnki(query, max_results=5):
-    search_url = f"https://search.cnki.com.cn/Search.aspx?q={quote_plus(query)}&rank=relevant"
+# --- 万方数据替代CNKI ---
+def search_wanfang(query, max_results=5):
+    search_url = f"http://s.wanfangdata.com.cn/Paper.aspx?q={quote_plus(query)}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/91.0 Safari/537.36"
@@ -16,29 +15,35 @@ def search_cnki(query, max_results=5):
         response = requests.get(search_url, headers=headers, timeout=15)
         response.raise_for_status()
     except Exception as e:
-        print(f"[CNKI] 请求失败: {e}")
+        print(f"[万方] 请求失败: {e}")
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
     results = []
 
-    articles = soup.find_all("div", class_="wz_content")[:max_results]
+    articles = soup.find_all("div", class_="record-item")[:max_results]
     if not articles:
-        print("[CNKI] 没有找到文章结果")
+        print("[万方] 没有找到文章结果")
         return []
 
     for art in articles:
         try:
-            title_tag = art.find("a", class_="fz14")
+            # 标题和链接
+            title_tag = art.find("a", class_="title")
             title = title_tag.get_text(strip=True)
             href = title_tag["href"]
             if not href.startswith("http"):
-                href = urljoin("https://search.cnki.com.cn/", href)
+                href = urljoin("http://www.wanfangdata.com.cn/", href)
 
-            info_tag = art.find("p", class_="source")
+            # 作者信息
+            authors_tag = art.find("div", class_="authors")
+            authors = authors_tag.get_text(strip=True).replace("作者：", "") if authors_tag else "N/A"
+
+            # 期刊和年份信息
+            source_tag = art.find("div", class_="source")
             journal, year = "N/A", "N/A"
-            if info_tag:
-                text = info_tag.get_text(strip=True)
+            if source_tag:
+                text = source_tag.get_text(strip=True)
                 journal_match = re.search(r"《(.*?)》", text)
                 if journal_match:
                     journal = journal_match.group(1)
@@ -46,28 +51,33 @@ def search_cnki(query, max_results=5):
                 if year_match:
                     year = year_match.group(0)
 
-            abstract_tag = art.find("p", class_="brief")
-            abstract = abstract_tag.get_text(strip=True) if abstract_tag else "N/A"
+            # 摘要
+            abstract_tag = art.find("div", class_="abstract")
+            abstract = abstract_tag.get_text(strip=True).replace("摘要：", "") if abstract_tag else "N/A"
+
+            # DOI
+            doi_tag = art.find("div", class_="doi")
+            doi = doi_tag.get_text(strip=True).replace("DOI：", "") if doi_tag else "N/A"
 
             results.append({
                 "Title": title,
-                "Title (中文翻译版)": title,
+                "Title (中文翻译版)": title,  # 万方是中文文献，不需要翻译
                 "Abstract": abstract,
-                "Abstract (中文翻译版)": abstract,
+                "Abstract (中文翻译版)": abstract,  # 同上
                 "Publication Date": year,
-                "Authors": "N/A",
-                "DOI": "N/A",
-                "Article Type": "N/A",
+                "Authors": authors,
+                "DOI": doi,
+                "Article Type": "N/A",  # 万方搜索结果不直接提供文章类型
                 "Journal": journal,
-                "Impact Factor": "N/A",
-                "Keywords": "N/A",
+                "Impact Factor": "N/A",  # 需要后续处理
+                "Keywords": "N/A",  # 万方搜索结果不直接提供关键词
                 "Full Text Link": href
             })
         except Exception as e:
-            print(f"[CNKI] 解析出错: {e}")
+            print(f"[万方] 解析出错: {e}")
             continue
 
-    print(f"[CNKI] 获取成功，共 {len(results)} 条文献")
+    print(f"[万方] 获取成功，共 {len(results)} 条文献")
     return results
 
 # --- 请求工具函数 ---
