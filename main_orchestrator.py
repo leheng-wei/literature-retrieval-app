@@ -64,7 +64,44 @@ def save_policy_summary_to_txt(policy_data, filename):
     except Exception as e:
         print(f"Error saving policy summary to text file {filepath}: {e}")
         return None 
+# main_orchestrator.py
+import pandas as pd
 
+def supplement_literature_info(input_file, output_file, email, api_key):
+    """读取翻译后的Excel文件，补充文献信息并生成新文件"""
+    try:
+        # 读取翻译后的文件
+        df = pd.read_excel(input_file)
+        
+        # 检查是否有PMID列
+        if 'PMID' not in df.columns:
+            print("错误：Excel文件中未找到PMID列")
+            return False
+        
+        # 提取PMID列表
+        pmid_list = df['PMID'].dropna().astype(str).tolist()
+        print(f"找到 {len(pmid_list)} 个PMID，开始检索文献详情...")
+        
+        # 获取文献详情
+        article_details = fetch_article_details_by_pmids(pmid_list, email, api_key)
+        print(f"成功获取 {len(article_details)} 篇文献的补充信息")
+        
+        # 创建PMID到详情的映射
+        pmid_to_details = {item['PMID']: item for item in article_details}
+        
+        # 添加或更新作者、文献类型和关键词列
+        df['Authors'] = df['PMID'].apply(lambda x: pmid_to_details.get(str(x), {}).get('Authors', 'N/A'))
+        df['Article Type'] = df['PMID'].apply(lambda x: pmid_to_details.get(str(x), {}).get('Article Type', 'N/A'))
+        df['Keywords'] = df['PMID'].apply(lambda x: pmid_to_details.get(str(x), {}).get('Keywords', 'N/A'))
+        
+        # 保存到新文件
+        save_to_excel(df, output_file, sheet_name="Supplemented Results")
+        print(f"已成功补充文献信息并保存到 {output_file}")
+        return True
+        
+    except Exception as e:
+        print(f"补充文献信息时出错: {e}")
+        return False
 # --- Main Workflow ---
 def run_retrieval_workflow(query_en, query_cn, time_period_str, max_pubmed_results=20, max_baidu_results=5, max_policy_results=5):
     """Runs the complete retrieval and processing workflow."""
