@@ -1,80 +1,74 @@
 
-import streamlit as st
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import quote_plus
+import re
+from urllib.parse import quote_plus, urljoin
 
-# 搜索函数
-def search_wanfang(query, max_results=10):
+# --- CNKI 替代百度学术 ---
+def search_cnki(query, max_results=5):
+    search_url = f"https://search.cnki.com.cn/Search.aspx?q={quote_plus(query)}&rank=relevant"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/91.0 Safari/537.36"
     }
-    url = f"https://s.wanfangdata.com.cn/paper?q={quote_plus(query)}"
-    resp = requests.get(url, headers=headers)
-    if resp.status_code != 200:
-        st.error("请求失败，请稍后再试。")
+
+    try:
+        response = requests.get(search_url, headers=headers, timeout=15)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[CNKI] 请求失败: {e}")
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-    items = soup.select("div.result-item")[:max_results]
-
+    soup = BeautifulSoup(response.text, "html.parser")
     results = []
-    for item in items:
+
+    articles = soup.find_all("div", class_="wz_content")[:max_results]
+    if not articles:
+        print("[CNKI] 没有找到文章结果")
+        return []
+
+    for art in articles:
         try:
-            title_tag = item.find("a", class_="title")
+            title_tag = art.find("a", class_="fz14")
             title = title_tag.get_text(strip=True)
-            link = title_tag["href"]
+            href = title_tag["href"]
+            if not href.startswith("http"):
+                href = urljoin("https://search.cnki.com.cn/", href)
 
-            summary_tag = item.find("p", class_="summary")
-            summary = summary_tag.get_text(strip=True) if summary_tag else "N/A"
+            info_tag = art.find("p", class_="source")
+            journal, year = "N/A", "N/A"
+            if info_tag:
+                text = info_tag.get_text(strip=True)
+                journal_match = re.search(r"《(.*?)》", text)
+                if journal_match:
+                    journal = journal_match.group(1)
+                year_match = re.search(r"(19|20)\d{2}", text)
+                if year_match:
+                    year = year_match.group(0)
 
-            author_tag = item.find("div", class_="author")
-            authors = author_tag.get_text(strip=True) if author_tag else "N/A"
-
-            source_tag = item.find("span", class_="source")
-            source = source_tag.get_text(strip=True) if source_tag else "N/A"
+            abstract_tag = art.find("p", class_="brief")
+            abstract = abstract_tag.get_text(strip=True) if abstract_tag else "N/A"
 
             results.append({
-                "标题": title,
-                "摘要": summary,
-                "作者": authors,
-                "期刊": source,
-                "链接": link
+                "Title": title,
+                "Title (中文翻译版)": title,
+                "Abstract": abstract,
+                "Abstract (中文翻译版)": abstract,
+                "Publication Date": year,
+                "Authors": "N/A",
+                "DOI": "N/A",
+                "Article Type": "N/A",
+                "Journal": journal,
+                "Impact Factor": "N/A",
+                "Keywords": "N/A",
+                "Full Text Link": href
             })
         except Exception as e:
-            st.warning(f"解析失败：{e}")
+            print(f"[CNKI] 解析出错: {e}")
             continue
 
+    print(f"[CNKI] 获取成功，共 {len(results)} 条文献")
     return results
-
-
-# Streamlit UI
-st.set_page_config(page_title="万方文献搜索", layout="wide")
-
-st.title("📚 万方中文文献检索工具")
-
-query = st.text_input("请输入搜索关键词：", placeholder="例如：人工智能 医疗", max_chars=50)
-max_results = st.slider("最多显示结果数：", 5, 50, 10)
-
-if st.button("🔍 开始检索") and query.strip():
-    with st.spinner("正在检索中，请稍候..."):
-        data = search_wanfang(query.strip(), max_results=max_results)
-        if data:
-            df = pd.DataFrame(data)
-            st.success(f"共获取到 {len(df)} 条结果。")
-            st.dataframe(df, use_container_width=True)
-
-            # 下载按钮
-            st.download_button(
-                label="📥 下载为 Excel 文件",
-                data=df.to_excel(index=False, engine='openpyxl'),
-                file_name=f"万方文献_{query}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.warning("未获取到任何文献数据。")
-
 
 # --- 请求工具函数 ---
 def make_request(url):
