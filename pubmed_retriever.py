@@ -237,7 +237,61 @@ def get_article_types(article_node):
                 if pt_text:
                     article_type_parts.append(pt_text)
     return ", ".join(article_type_parts) if article_type_parts else "N/A"
-
+# pubmed_retriever.py
+def fetch_article_details_by_pmids(pmid_list, email, api_key):
+    """根据PMID列表获取文献详情"""
+    from Bio import Entrez
+    import time
+    
+    Entrez.email = email
+    if api_key:
+        Entrez.api_key = api_key
+    
+    pmid_chunks = [pmid_list[i:i+100] for i in range(0, len(pmid_list), 100)]
+    all_articles = []
+    
+    for chunk in pmid_chunks:
+        pmid_str = ",".join(chunk)
+        try:
+            handle = Entrez.efetch(db="pubmed", id=pmid_str, retmode="xml")
+            records = Entrez.read(handle)
+            handle.close()
+            
+            # 处理返回的文章数据
+            articles_to_process = records.get('PubmedArticle', [])
+            for article_entry in articles_to_process:
+                if not isinstance(article_entry, dict):
+                    continue
+                medline_citation = article_entry.get('MedlineCitation')
+                pubmed_data = article_entry.get('PubmedData')
+                if not medline_citation or not isinstance(medline_citation, dict):
+                    continue
+                
+                pmid = safe_get_text(medline_citation, 'PMID')
+                article_node = medline_citation.get('Article')
+                if not article_node or not isinstance(article_node, dict):
+                    continue
+                
+                # 提取所需信息
+                authors = parse_author_list(article_node.get('AuthorList'))
+                article_type = get_article_types(article_node)
+                keywords = get_keywords(medline_citation)
+                
+                all_articles.append({
+                    "PMID": pmid,
+                    "Authors": authors,
+                    "Article Type": article_type,
+                    "Keywords": keywords
+                })
+            
+            # 避免API请求过于频繁
+            time.sleep(0.3)
+            
+        except Exception as e:
+            print(f"Error fetching details for PMID chunk: {e}")
+            continue
+    
+    return all_articles
 # --- Main PubMed Search Function ---
 def search_pubmed(query, time_period_str, email, api_key, max_results=20):
     Entrez.email = email
