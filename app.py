@@ -83,3 +83,31 @@ if st.session_state.results_ready:
                 )
         else:
             st.warning("政策信息文件不存在")
+# app.py
+# 在页面中添加新步骤
+st.markdown("### 步骤3: 补充文献信息")
+uploaded_supplement_file = st.file_uploader("上传翻译后的Excel文件", type=["xlsx"], key="supplement_file")
+
+if uploaded_supplement_file is not None:
+    # 保存上传的文件
+    temp_input_path = "temp_translated_file.xlsx"
+    with open(temp_input_path, "wb") as f:
+        f.write(uploaded_supplement_file.getbuffer())
+    
+    if st.button("补充文献信息"):
+        with st.spinner("正在补充文献信息，请稍候..."):
+            output_file = "final_supplemented_results.xlsx"
+            success = supplement_literature_info(temp_input_path, output_file, USER_EMAIL, USER_API_KEY)
+            
+            if success:
+                st.success("文献信息补充完成！")
+                # 更新下载按钮，只下载最终文件
+                with open(output_file, "rb") as f:
+                    st.download_button(
+                        label="下载最终结果文件",
+                        data=f,
+                        file_name="final_supplemented_results.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+            else:
+                st.error("补充文献信息失败，请检查文件格式或稍后重试。")
