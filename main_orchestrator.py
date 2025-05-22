@@ -101,7 +101,7 @@ def run_retrieval_workflow(query_en, query_cn, time_period_str, max_pubmed_resul
 
     # 3. Chinese Literature Retrieval (Baidu Xueshu)
     print("\n--- Retrieving Chinese Literature from Baidu Xueshu ---")
-    baidu_articles_raw = search_cnki(query_cn, max_results=max_baidu_results)
+    baidu_articles_raw = search_wanfang(query_cn, max_results=max_baidu_results)
     if baidu_articles_raw:
         # For Baidu results, Title and Abstract are already Chinese.
         # We just need to ensure the columns match the final Excel structure.
