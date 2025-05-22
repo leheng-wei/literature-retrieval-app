@@ -389,6 +389,33 @@ def search_pubmed(query, time_period_str, email, api_key, max_results=20):
 
     print(f"Successfully fetched details for {len(results)} articles.")
     return results
+    # main_orchestrator.py
+def process_generated_pubmed_file(email, api_key):
+    """处理之前生成的PubMed结果文件，补充文献信息"""
+    input_file = "pubmed_literature_results.xlsx"
+    output_file = "final_supplemented_results.xlsx"
+    
+    try:
+        # 检查文件是否存在
+        if not os.path.exists(input_file):
+            print(f"错误：找不到文件 {input_file}")
+            return None
+        
+        print(f"找到PubMed结果文件，开始补充文献信息...")
+        
+        # 补充文献信息
+        success = supplement_literature_info(input_file, output_file, email, api_key)
+        
+        if success:
+            print(f"文献信息补充完成，保存至 {output_file}")
+            return output_file
+        else:
+            print("补充文献信息失败")
+            return None
+            
+    except Exception as e:
+        print(f"处理PubMed文件时出错: {e}")
+        return None
 
 if __name__ == '__main__':
     USER_EMAIL = "mingdan1021@gmail.com" 
