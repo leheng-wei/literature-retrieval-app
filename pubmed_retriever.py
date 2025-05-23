@@ -1,6 +1,6 @@
 from Bio import Entrez
 import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional  # 添加这行导入
 
 def get_date_range(time_period: str) -> tuple:
     """根据中文时间描述返回日期范围"""
@@ -16,7 +16,7 @@ def get_date_range(time_period: str) -> tuple:
     start_date = today - datetime.timedelta(days=days)
     return start_date.strftime("%Y/%m/%d"), today.strftime("%Y/%m/%d")
 
-def parse_author(author: dict) -> str:
+def parse_author(author: Dict) -> str:  # 使用Dict类型
     """解析单个作者信息"""
     if "CollectiveName" in author:
         return author["CollectiveName"]
@@ -31,13 +31,13 @@ def parse_author(author: dict) -> str:
         return f"{last} {initials}"
     return last or fore or initials
 
-def parse_authors(author_list: List[dict]) -> str:
+def parse_authors(author_list: List[Dict]) -> str:  # 使用List和Dict类型
     """解析作者列表"""
     if not author_list:
         return "N/A"
     return ", ".join(filter(None, [parse_author(a) for a in author_list]))
 
-def parse_keywords(article: dict) -> str:
+def parse_keywords(article: Dict) -> str:  # 使用Dict类型
     """提取关键词"""
     keywords = set()
     
@@ -57,14 +57,14 @@ def parse_keywords(article: dict) -> str:
     
     return ", ".join(sorted(keywords)) if keywords else "N/A"
 
-def parse_article_type(article: dict) -> str:
+def parse_article_type(article: Dict) -> str:  # 使用Dict类型
     """提取文献类型"""
     types = article.get("MedlineCitation", {}).get("Article", {}).get("PublicationTypeList", [])
     if types:
         return ", ".join([t for t in types if t])
     return "N/A"
 
-def search_pubmed(query: str, time_period_str: str, email: str, api_key: str, max_results: int = 20) -> List[Dict]:
+def search_pubmed(query: str, time_period_str: str, email: str, api_key: str, max_results: int = 20) -> List[Dict]:  # 使用List和Dict类型
     """执行PubMed检索"""
     Entrez.email = email
     Entrez.api_key = api_key
