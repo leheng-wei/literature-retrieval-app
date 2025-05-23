@@ -6,6 +6,12 @@ from typing import List, Dict
 # 翻译配置
 TRANSLATOR = Translator(service_urls=['translate.google.com'])
 TRANSLATION_DELAY = 1  # 秒
+# 在文件顶部添加
+import os
+from typing import List, Dict
+
+# 常量定义
+IMPACT_FACTOR_FILE_PATH = os.path.join(os.path.dirname(__file__), "JSR_impact_factors.xlsx")
 
 def translate_text(text: str, target_lang: str = 'zh-cn') -> str:
     """翻译文本到目标语言"""
