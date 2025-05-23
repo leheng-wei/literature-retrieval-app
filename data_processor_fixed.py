@@ -7,7 +7,7 @@ import re
 
 # --- Configuration ---
 TRANSLATION_DELAY = 3.5  # seconds between translation API calls to avoid rate limits
-IMPACT_FACTOR_FILE_PATH = "JSR_impact_factors.xlsx"
+IMPACT_FACTOR_FILE_PATH = "J_Entrez1.xlsx"
 
 # --- Translation Function ---
 def translate_text(text, dest_lang=	"zh-cn"	, max_retries=3):
