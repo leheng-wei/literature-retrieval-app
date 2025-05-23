@@ -1,6 +1,7 @@
 from googletrans import Translator
 import pandas as pd
 import time
+from typing import List, Dict
 
 # 翻译配置
 TRANSLATOR = Translator(service_urls=['translate.google.com'])
