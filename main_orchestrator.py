@@ -53,12 +53,12 @@ def run_retrieval_workflow(query_en, time_period_str, max_pubmed_results=20):
             article["Abstract (中文翻译版)"] = translate_text(article.get("Abstract"))
             article["Impact Factor"] = get_impact_factor(article.get("Journal"), impact_factors_data)
             processed_pubmed_articles.append(article)
-        standardized_pubmed_data = process_articles_common(processed_pubmed_articles, source_type="PubMed")
+        standardized_pubmed_data = process_articles_common(processed_pubmed_article)
         pubmed_df = pd.DataFrame(standardized_pubmed_data)
         pubmed_file = save_to_excel(pubmed_df, "pubmed_literature_results.xlsx", sheet_name="PubMed Results")
     else:
         print("No articles retrieved from PubMed or an error occurred.")
-        standardized_pubmed_data = process_articles_common([], source_type="PubMed")
+        standardized_pubmed_data = process_articles_common([])
         pubmed_df = pd.DataFrame(standardized_pubmed_data)
         pubmed_file = save_to_excel(pubmed_df, "pubmed_literature_results.xlsx", sheet_name="PubMed Results")
 
